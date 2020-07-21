@@ -535,6 +535,52 @@ func (cdev CharDevice) deviceName(config *Config) string {
 	return string(cdev.Driver)
 }
 
+// CharSerialDevice represents a qemu character device.
+type CharSerialDevice struct {
+	Backend CharDeviceBackend
+
+	ID   string
+	Path string
+	Name string
+
+	// serial
+	Chardev string
+}
+
+// Valid returns true if the CharDevice structure is valid and complete.
+func (cdev CharSerialDevice) Valid() bool {
+	if cdev.ID == "" || cdev.Path == "" {
+		return false
+	}
+
+	return true
+}
+
+// QemuParams returns the qemu parameters built out of this character device.
+func (cdev CharSerialDevice) QemuParams(config *Config) []string {
+	var cdevParams []string
+	var serialParams []string
+	var qemuParams []string
+
+	serialParams = append(serialParams, fmt.Sprintf("chardev:%s", cdev.Chardev))
+
+	cdevParams = append(cdevParams, string(cdev.Backend))
+	cdevParams = append(cdevParams, fmt.Sprintf(",id=%s", cdev.ID))
+	if cdev.Backend == Socket {
+		cdevParams = append(cdevParams, fmt.Sprintf(",path=%s,server,nowait", cdev.Path))
+	} else {
+		cdevParams = append(cdevParams, fmt.Sprintf(",path=%s", cdev.Path))
+	}
+
+	qemuParams = append(qemuParams, "-serial")
+	qemuParams = append(qemuParams, strings.Join(serialParams, ""))
+
+	qemuParams = append(qemuParams, "-chardev")
+	qemuParams = append(qemuParams, strings.Join(cdevParams, ""))
+
+	return qemuParams
+}
+
 // NetDeviceType is a qemu networking device type.
 type NetDeviceType string
 
