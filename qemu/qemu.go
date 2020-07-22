@@ -547,9 +547,9 @@ type CharSerialDevice struct {
 	Chardev string
 }
 
-// Valid returns true if the CharDevice structure is valid and complete.
-func (cdev CharSerialDevice) Valid() bool {
-	if cdev.ID == "" || cdev.Path == "" {
+// Valid returns true if the CharSerialDevice structure is valid and complete.
+func (csdev CharSerialDevice) Valid() bool {
+	if csdev.ID == "" || csdev.Path == "" {
 		return false
 	}
 
@@ -557,26 +557,60 @@ func (cdev CharSerialDevice) Valid() bool {
 }
 
 // QemuParams returns the qemu parameters built out of this character device.
-func (cdev CharSerialDevice) QemuParams(config *Config) []string {
-	var cdevParams []string
+func (csdev CharSerialDevice) QemuParams(config *Config) []string {
+	var csdevParams []string
 	var serialParams []string
 	var qemuParams []string
 
-	serialParams = append(serialParams, fmt.Sprintf("chardev:%s", cdev.Chardev))
+	serialParams = append(serialParams, fmt.Sprintf("chardev:%s", csdev.Chardev))
 
-	cdevParams = append(cdevParams, string(cdev.Backend))
-	cdevParams = append(cdevParams, fmt.Sprintf(",id=%s", cdev.ID))
-	if cdev.Backend == Socket {
-		cdevParams = append(cdevParams, fmt.Sprintf(",path=%s,server,nowait", cdev.Path))
+	csdevParams = append(csdevParams, string(csdev.Backend))
+	csdevParams = append(csdevParams, fmt.Sprintf(",id=%s", csdev.ID))
+	if csdev.Backend == Socket {
+		csdevParams = append(csdevParams, fmt.Sprintf(",path=%s,server,nowait", csdev.Path))
 	} else {
-		cdevParams = append(cdevParams, fmt.Sprintf(",path=%s", cdev.Path))
+		csdevParams = append(csdevParams, fmt.Sprintf(",path=%s", csdev.Path))
 	}
 
 	qemuParams = append(qemuParams, "-serial")
 	qemuParams = append(qemuParams, strings.Join(serialParams, ""))
 
 	qemuParams = append(qemuParams, "-chardev")
-	qemuParams = append(qemuParams, strings.Join(cdevParams, ""))
+	qemuParams = append(qemuParams, strings.Join(csdevParams, ""))
+
+	return qemuParams
+}
+
+// Driver represents a qemu driver
+type Driver struct {
+	File     string
+	If       string
+	Format   string
+	Unit     uint32
+	ReadOnly bool
+}
+
+// Valid returns true if the DriverParam structure is valid and complete.
+func (drive Driver) Valid() bool {
+	return true
+}
+
+// QemuParams returns the qemu parameters built out of this driver.
+func (drive Driver) QemuParams(config *Config) []string {
+	var driveParams []string
+	var qemuParams []string
+
+	driveParams = append(driveParams, fmt.Sprintf("file=%s", drive.File))
+	driveParams = append(driveParams, fmt.Sprintf(",if=%s", drive.If))
+	driveParams = append(driveParams, fmt.Sprintf(",format=%s", drive.Format))
+	driveParams = append(driveParams, fmt.Sprintf(",unit=%d", drive.Unit))
+
+	if drive.ReadOnly {
+		driveParams = append(driveParams, ",readonly")
+	}
+
+	qemuParams = append(qemuParams, "-drive")
+	qemuParams = append(qemuParams, strings.Join(driveParams, ""))
 
 	return qemuParams
 }
